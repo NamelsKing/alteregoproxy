@@ -1,0 +1,10 @@
+fastapi
+openai
+SpeechRecognition
+trafaret
+trafaret-config
+pydub
+gtts
+aiofiles
+python-multipart
+jinja2

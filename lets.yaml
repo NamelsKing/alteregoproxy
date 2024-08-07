@@ -1,0 +1,141 @@
+shell: bash
+
+env:
+  DOCKER_BUILDKIT: "1"
+  COMPOSE_DOCKER_CLI_BUILD: "1"
+  REQ_PYTHON_V: "Python 3.12.4"
+
+eval_env:
+  CURRENT_UID: echo "`id -u`:`id -g`"
+  CURRENT_USER_NAME: echo "`id -un`"
+  CURRENT_PYTHON_V: echo "`python --version 2>&1`"
+
+commands:
+  build-app:
+    description: __build for inner purpose
+    cmd: docker build -t aeproxy . -f docker/backend.dockerfile --target dev
+
+  build-checks:
+    description: __build for inner purpose
+    cmd: docker build -t aeproxy-checks . -f docker/backend.dockerfile --target checks
+
+  check_python_v:
+    description: __check python versoin for local deps
+    cmd: |
+      if [ "$REQ_PYTHON_V" != "$CURRENT_PYTHON_V" ]; then
+        echo "Python version is not $REQ_PYTHON_V. Exiting the process."
+        exit 1
+      fi
+      echo "Python ok"
+
+  init:
+    description: Install all project deps for indexing
+    cmd: |
+      lets init-venv
+      lets install-py-deps
+
+  # Main spinup command
+  run:
+    description: Run discord bot monitor
+    depends:
+      - build-app
+    cmd: |
+      docker-compose up aeproxy
+
+  test:
+    description: Run unit tests
+    depends:
+      - build-checks
+    options: |
+      Usage: lets test [<tests>]
+    cmd: |
+      ARGS=""
+      if [[ -n ${LETSOPT_TESTS} ]]; then
+        ARGS="-k ${LETSOPT_TESTS}"
+      fi
+      docker-compose run --rm pytest ${ARGS}
+
+  flake:
+    description: Run flake8
+    options: |
+      Usage: lets flake [--diff] [<args>...]
+
+      Options:
+       <args>...         Trailing positional args
+        -d, --diff       Run only on diff
+    depends:
+      - build-checks
+    cmd: |
+      FLAKE_ARGS='.'
+
+      DIFF=$( [[ -n "$LETSOPT_DIFF" ]] && echo "--diff" )
+
+      if [[ -n "$LETSOPT_DIFF" ]] && [[ -n "$LETSOPT_ARGS" ]]; then
+        FLAKE_ARGS="$DIFF $LETSOPT_ARGS"
+      fi
+
+      docker-compose run -e ARGS=FLAKE_ARGS --rm flake8
+
+  ishell:
+    description: Run ipython shell
+    depends:
+      - build-app
+    cmd: docker-compose run --rm -T ishell
+
+  init-venv:
+    description: |
+      Init virtual env in project.
+    depends:
+      - check_python_v
+    cmd: |
+      if [[ ! -d .venv ]]; then
+        echo Creating .venv
+        $(which python3) -m venv .venv
+      fi
+      lets activate-pyenv
+      if [ ! -f .venv/bin/pip-compile ]; then
+        echo Installing pip-tools
+        pip3 install pip-tools
+      fi
+      if [ ! -f requirements/backend.txt ]; then
+        echo "Compiling requirements/backend.in"
+        pip-compile --output-file=requirements/backend.txt requirements/backend.in
+      fi
+      if [ ! -f requirements/checks.txt ]; then
+        echo "Compiling requirements/checks.in"
+        pip-compile --output-file=requirements/checks.txt requirements/checks.in
+      fi
+
+  activate-pyenv:
+    description: activate python venv
+    depends:
+      - check_python_v
+    cmd: |
+      source .venv/bin/activate
+      echo activated $(which python3)
+
+  install-py-deps:
+    description: install python dependencies from requiremtns
+    depends:
+      - check_python_v
+    cmd: |
+      $(which python3) -m pip install -r requirements/backend.txt
+      $(which python3) -m pip install -r requirements/checks.txt
+
+  update-py-deps:
+    description: generate new dependencies for backend
+    cmd: |
+      docker-compose run --rm bot-monitor-base pip-compile \
+        --output-file=requirements/backend.txt requirements/backend.in
+
+  update-checks-deps:
+    description: generate new dependencies for checks
+    cmd: |
+      docker-compose run --rm bot-monitor-base pip-compile \
+        --output-file=requirements/checks.txt requirements/checks.in
+
+  enable-hooks:
+    description: enable git hooks for project
+    cmd: |
+      git config --local core.hooksPath .hooks
+      echo Git hooks enabled!

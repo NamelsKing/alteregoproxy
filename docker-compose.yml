@@ -1,0 +1,61 @@
+version: '3.7'
+
+services:
+  aeproxy-base: &aeproxy-base
+    image: aeproxy
+    working_dir: /app
+    user: ${CURRENT_UID}
+    tty: true
+    init: true
+    environment:
+      PYTHONUNBUFFERED: 1
+      PYTHONPATH: .
+      CONFIG_PATH: ${CONFIG_PATH}
+    build:
+      context: .
+      dockerfile: docker/backend.dockerfile
+      target: dev
+    volumes:
+      - ./aeproxy:/app/aeproxy
+      - ./config:/app/config
+      - ./requirements:/app/requirements
+
+  aeproxy:
+    <<: *aeproxy-base
+    command: |
+      watchexec --restart \
+        -w config \
+        -w aeproxy \
+        --exts py,yaml \
+        -- python3 -m aeproxy
+
+  ishell:
+    <<: *aeproxy-base
+    command: ipython
+
+  flake8:
+    image: 'aeproxy_checks'
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+        read_only: True
+    command: flake8 $ARGS
+
+  mypy:
+    image: 'aeproxy_checks'
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+        read_only: True
+    command: flake8 $ARGS
+
+  pytest:
+    image: 'aeproxy_checks'
+    entrypoint: pytest
+    user: ${CURRENT_UID}
+    volumes:
+      - type: bind
+        source: .
+        target: /app
