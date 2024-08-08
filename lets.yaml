@@ -48,12 +48,7 @@ commands:
       - build-checks
     options: |
       Usage: lets test [<tests>]
-    cmd: |
-      ARGS=""
-      if [[ -n ${LETSOPT_TESTS} ]]; then
-        ARGS="-k ${LETSOPT_TESTS}"
-      fi
-      docker-compose run --rm pytest ${ARGS}
+    cmd: [docker-compose run --rm pytest]
 
   flake:
     description: Run flake8
@@ -74,7 +69,7 @@ commands:
         FLAKE_ARGS="$DIFF $LETSOPT_ARGS"
       fi
 
-      docker-compose run -e ARGS=FLAKE_ARGS --rm flake8
+      docker-compose run -e CMD="flake8" ARGS=${FLAKE_ARGS} --rm checks
 
   ishell:
     description: Run ipython shell
@@ -95,7 +90,8 @@ commands:
       lets activate-pyenv
       if [ ! -f .venv/bin/pip-compile ]; then
         echo Installing pip-tools
-        pip3 install pip-tools
+        pip install --upgrade pip
+        pip install pip-tools
       fi
       if [ ! -f requirements/backend.txt ]; then
         echo "Compiling requirements/backend.in"
@@ -125,13 +121,13 @@ commands:
   update-py-deps:
     description: generate new dependencies for backend
     cmd: |
-      docker-compose run --rm bot-monitor-base pip-compile \
+      docker-compose run --rm aeproxy-base pip-compile \
         --output-file=requirements/backend.txt requirements/backend.in
 
   update-checks-deps:
     description: generate new dependencies for checks
     cmd: |
-      docker-compose run --rm bot-monitor-base pip-compile \
+      docker-compose run --rm aeproxy-base pip-compile \
         --output-file=requirements/checks.txt requirements/checks.in
 
   enable-hooks:

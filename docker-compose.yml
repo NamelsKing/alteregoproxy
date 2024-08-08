@@ -33,23 +33,13 @@ services:
     <<: *aeproxy-base
     command: ipython
 
-  flake8:
+  checks:
     image: 'aeproxy_checks'
     volumes:
       - type: bind
         source: .
         target: /app
-        read_only: True
-    command: flake8 $ARGS
-
-  mypy:
-    image: 'aeproxy_checks'
-    volumes:
-      - type: bind
-        source: .
-        target: /app
-        read_only: True
-    command: flake8 $ARGS
+    command: $CMD $ARGS
 
   pytest:
     image: 'aeproxy_checks'

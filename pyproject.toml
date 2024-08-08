@@ -93,4 +93,4 @@ omit = [
 directory = "htmlcov"
 
 [tool.coverage.xml]
-output = "​⬤
+output = "​"
