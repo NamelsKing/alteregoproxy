@@ -1,0 +1,96 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alteregoproxy"
+version = "0.0.1"
+description = "Proxy model with voice interface"
+authors = [
+    { name = "Dmytro Medvinskyi" },
+]
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "GPL-3.0" }
+
+[tool.black]
+line-length = 120
+target-version = ['py38']
+skip-string-normalization = false
+include = '\.pyi?$'
+exclude = '''
+/(
+  \.eggs
+  | \.git
+  | \.hooks
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.flake8]
+max-line-length = 120
+ignore = [
+    "E203",  # Whitespace before ':', handled by Black
+    "W503",  # Line break before binary operator, handled by Black
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "migrations",
+    "venv",
+]
+extend-ignore = [
+    "B005",  # Ignore unused loop variable in comprehensions
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+strict_optional = true
+no_implicit_optional = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cov=aeproxy --cov-report=arproxy-term"
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = [
+    "aeproxy",
+]
+omit = [
+    "tests/*",
+    "venv/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+precision = 2
+omit = [
+    "tests/*",
+    "venv/*",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "​⬤
